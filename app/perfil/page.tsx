@@ -25,10 +25,17 @@ export const metadata = {
 
 export default async function PerfilPage() {
   const usuarioActual = await requiereUsuario()
-  const usuario = await getUsuario(usuarioActual.id)
+  const usuarioRaw = await getUsuario(usuarioActual.id)
 
-  if (!usuario) {
+  if (!usuarioRaw) {
     throw new Error('Usuario no encontrado')
+  }
+
+  // Convertir fechas a strings para evitar errores de serialización
+  const usuario = {
+    ...usuarioRaw,
+    creadoEn: usuarioRaw.creadoEn.toISOString(),
+    rol: usuarioRaw.rol as string
   }
 
   return (

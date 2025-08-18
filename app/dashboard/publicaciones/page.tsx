@@ -24,12 +24,26 @@ export const metadata = {
 
 export default async function MisPublicacionesPage() {
   const usuario = await requiereUsuario()
-  const publicaciones = await getMisPublicaciones(usuario.id)
+  const publicacionesRaw = await getMisPublicaciones(usuario.id)
+  
+  // Convertir fechas a strings para evitar errores de serialización
+  const publicaciones = publicacionesRaw.map(pub => ({
+    ...pub,
+    creadoEn: pub.creadoEn.toISOString(),
+    actualizadoEn: pub.actualizadoEn.toISOString(),
+    etiquetas: pub.etiquetas.map(et => ({
+      ...et,
+      etiqueta: {
+        ...et.etiqueta,
+        creadoEn: et.etiqueta.creadoEn.toISOString()
+      }
+    }))
+  }))
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-gray-900">
           Mis Publicaciones
         </h1>
         <p className="text-gray-600">
