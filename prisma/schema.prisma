@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  USUARIO
+  ADMIN
+}
+
+enum EstadoPublicacion {
+  BORRADOR
+  PUBLICADO
+}
+
+model Usuario {
+  id               String   @id @default(cuid()) @map("id")
+  nombre           String?  @map("nombre")
+  email            String   @unique(map: "usuarios_email_unique") @map("email")
+  hashContrasena   String   @map("hash_contrasena")
+  rol              Rol      @default(USUARIO) @map("rol")
+  activo           Boolean  @default(true) @map("activo")
+  creadoEn         DateTime @default(now()) @map("creado_en")
+  actualizadoEn    DateTime @updatedAt @map("actualizado_en")
+
+  // Relaciones
+  publicaciones    Publicacion[]
+  comentarios      Comentario[]
+  meGustas         MeGusta[]
+  auditorias       Auditoria[]
+  compartidos      Compartido[]
+
+  @@map("usuarios")
+}
+
+model Publicacion {
+  id            String             @id @default(cuid()) @map("id")
+  titulo        String             @map("titulo")
+  slug          String             @unique(map: "publicaciones_slug_unique") @map("slug")
+  contenido     String             @map("contenido")
+  estado        EstadoPublicacion  @default(BORRADOR) @map("estado")
+  autorId       String             @map("autor_id")
+  creadoEn      DateTime           @default(now()) @map("creado_en")
+  actualizadoEn DateTime           @updatedAt @map("actualizado_en")
+  visible       Boolean            @default(true) @map("visible")
+
+  // Relaciones
+  autor         Usuario            @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  comentarios   Comentario[]
+  meGustas      MeGusta[]
+  etiquetas     PublicacionEtiqueta[]
+  compartidos   Compartido[]
+
+  @@index([autorId])
+  @@map("publicaciones")
+}
+
+model Comentario {
+  id            String   @id @default(cuid()) @map("id")
+  contenido     String   @map("contenido")
+  autorId       String   @map("autor_id")
+  publicacionId String   @map("publicacion_id")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+  visible       Boolean  @default(true) @map("visible")
+
+  // Relaciones
+  autor         Usuario     @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  publicacion   Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+
+  @@map("comentarios")
+}
+
+model MeGusta {
+  id            String   @id @default(cuid()) @map("id")
+  usuarioId     String   @map("usuario_id")
+  publicacionId String   @map("publicacion_id")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+
+  // Relaciones
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacion   Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, publicacionId])
+  @@map("me_gustas")
+}
+
+model Etiqueta {
+  id           String   @id @default(cuid()) @map("id")
+  nombre       String   @unique @map("nombre")
+  creadoEn     DateTime @default(now()) @map("creado_en")
+
+  // Relaciones
+  publicaciones PublicacionEtiqueta[]
+
+  @@map("etiquetas")
+}
+
+model PublicacionEtiqueta {
+  publicacionId String @map("publicacion_id")
+  etiquetaId    String @map("etiqueta_id")
+
+  // Relaciones
+  publicacion   Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+  etiqueta      Etiqueta    @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@unique([publicacionId, etiquetaId])
+  @@map("publicaciones_etiquetas")
+}
+
+model Auditoria {
+  id         String   @id @default(cuid()) @map("id")
+  actorId    String   @map("actor_id")
+  accion     String   @map("accion")
+  entidad    String   @map("entidad")
+  entidadId  String   @map("entidad_id")
+  creadoEn   DateTime @default(now()) @map("creado_en")
+
+  // Relaciones
+  actor      Usuario  @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@map("auditorias")
+}
+
+model Compartido {
+  id            String   @id @default(cuid()) @map("id")
+  usuarioId     String   @map("usuario_id")
+  publicacionId String   @map("publicacion_id")
+  proveedor     String   @map("proveedor")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+
+  // Relaciones
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacion   Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+
+  @@map("compartidos")
+}
